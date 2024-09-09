@@ -1,4 +1,5 @@
 # Magntic Gibbs Free Energy based on Weiss Mean-Field Theory
+Following the description in ["Z. Q. You, J. H. Zhen, T. P. Hou, D. Zhang, W. Zhou, H. F. Lin, Q. Isayev, S. Yershov, Y. Wu, and K. M. Wu, Thermodynamic mechanism of the magnetic-field-induced carbon content variation in bainitic ferrite during super bainite transformation, Journal of Magnetism and Magnetic Materials, 560, (2022) 169558."](https://doi.org/10.1016/j.jmmm.2022.169558)
 
 ## Requirements for Python
 - Numpy
@@ -17,7 +18,7 @@ Here, 2.2 means the magnetic moment of Fe by DFT.
 
 ### Result figures
 - Moment.pdf ... Magnetic moment vs temperature
-![](figs/Moment.png)
+<img width="300" src="figs/Moment.png")
 
 - Cm.pdf ... Specific heat vs temperature
 ![](figs/Cm.png)
