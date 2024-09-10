@@ -1,11 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys, os
+from scipy import integrate
 
 R = 8.3144569919459 # J/mol K
 kB = 8.6173303e-5 # eV/K
 T2J = 5.584937543138665 # J/mol T
 mu_B = 5.7883817982e-05 # eV/T
+eV2Jmol = 96.4853e3
 
 def main():
     """ m0: magnetic moment at T=0k, B=0T from DFT (mu_B)
@@ -34,6 +36,7 @@ def main():
     lamb = Tc2lambda(0.5*m0, Tc, nmag)
     print("*lambda: {0} (T)".format(lamb*mu_B**2))
     temp = np.linspace(1e-3,1.5*Tc,ndiv)
+    iTc = np.where(temp>Tc)[0][0]
     moment = np.zeros((len(magfield),ndiv))
     moment[:,0] = m0
     for j, mf in enumerate(magfield):
@@ -45,8 +48,12 @@ def main():
     Cm = np.array([Cmcalc(tempc[i],mf,moment[j,i],struc,p=2.) for j, mf in enumerate(magfield) for i in range(len(tempc))]).reshape(len(magfield),ndiv)
     print(Cm)
     CmdT = np.array([Cm[j,i]/temp[i] for j in range(len(magfield)) for i in range(len(temp))]).reshape(len(magfield),ndiv)
-    dHm = np.array([Simpson(temp,Cm[j,:],i) for j in range(len(magfield)) for i in range(len(temp)-2)]).reshape(len(magfield),ndiv-2)
-    dSm = np.array([Simpson(temp,CmdT[j,:],i) for j in range(len(magfield)) for i in range(len(temp)-2)]).reshape(len(magfield),ndiv-2)
+    #dHm = np.array([integrate.simps(Cm[j,0:i],temp[0:i]) if i<=iTc else integrate.simps(Cm[j,iTc:i],temp[iTc:i])
+    #                for j in range(len(magfield)) for i in range(1,len(temp)-1)]).reshape(len(magfield),ndiv-2)
+    #dSm = np.array([integrate.simps(CmdT[j,0:i],temp[0:i]) if i<=iTc else integrate.simps(CmdT[j,iTc:i],temp[iTc:i])
+    #                for j in range(len(magfield)) for i in range(1,len(temp)-1)]).reshape(len(magfield),ndiv-2)
+    dHm = np.array([integrate.simps(Cm[j,0:i],temp[0:i]) for j in range(len(magfield)) for i in range(1,len(temp)-1)]).reshape(len(magfield),ndiv-2)
+    dSm = np.array([integrate.simps(CmdT[j,0:i],temp[0:i]) for j in range(len(magfield)) for i in range(1,len(temp)-1)]).reshape(len(magfield),ndiv-2)
 
     if ('-p' in args):
         plt.xlabel("Temperature (K)")
@@ -58,7 +65,7 @@ def main():
         plt.show()
 
         plt.xlabel("Temperature (K)")
-        plt.ylabel("$C_m$")
+        plt.ylabel("$C_m$ (J/mol$\cdot$K)")
         for i in range(len(magfield)):
             plt.plot(temp, Cm[i,:], c=colors[i], label="B={0}T".format(magfield[i]))
         plt.savefig("Cm.pdf")
@@ -124,12 +131,9 @@ def kp(mm, struc, p=2.):
 
 def Cmcalc(tempc, magfield, mm, struc, p=2.):
     if (tempc >= 1.):
-        return kp(mm,struc,p=p)*tempc*np.exp(8.*p*(1.-tempc))
+        return eV2Jmol*kp(mm,struc,p=p)*tempc*np.exp(8.*p*(1.-tempc))
     else:
-        return kf(mm,struc)*tempc*np.exp(-4.*(1.-tempc))
-
-def Simpson(x, f, n):
-    return sum([(x[i+1]-x[i])*(f[i]+4.*f[i+1]+f[i+2])/3. for i in range(0,n)])
+        return eV2Jmol*kf(mm,struc)*tempc*np.exp(-4.*(1.-tempc))
 
 def Tc2lambda(J, Tc, n, g=2.):
     return 3.*kB*Tc/(J*(J+1.)*n*(g**2)*(mu_B**2))  # T/eV
