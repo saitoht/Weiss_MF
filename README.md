@@ -4,6 +4,7 @@ Following the description in ["Z. Q. You, J. H. Zhen, T. P. Hou, D. Zhang, W. Zh
 ## Requirements for Python
 - Numpy
 - Matplotlib
+- Scipy
 
 ## Example for BCC Fe
 Before calculation, you should see the contents of Weiss.py.  
@@ -14,7 +15,7 @@ You can calculate the property by the following command.
 python Weiss.py 2.2 -p
 ```
 Here, 2.2 means the magnetic moment of Fe by DFT.
--p activates to plot results.
+-p activates the plot option.
 
 ### Result figures
 - Moment.pdf ... Magnetic moment vs temperature
