@@ -19,13 +19,12 @@ def main():
         lamb: lambda, molecular field const 
         magfield: magnetic field B (T) 
         struc: crystal structure, now BCC or FCC"""
-    ndiv = 30000
-    temp0 = 300.
-    magfield = [0.0, 10.0]
-    colors = ['red', 'blue']
+    ndiv = 1000
+    ndivf = 100
+    magfield = 0.5
     Tc = 1043.
     nmag = 1
-    struc = 'BCC'
+    struc = 'carbide'
     
     usage = """ USAGE: python Weiss.py 2.2 [-p] [-h] """
     args = sys.argv
@@ -36,74 +35,43 @@ def main():
     print("*moment @ T=0K: {0} (mu_B)".format(m0))
     lamb = Tc2lambda(0.5*m0, Tc, nmag)
     print("*lambda: {0} (T)".format(lamb*mu_B**2))
-    temp = np.linspace(1e-3,1.5*Tc,ndiv)
+    tempc0A = np.linspace(1e-3,1.,2*ndiv,endpoint=False)
+    tempc0B = np.linspace(1.,0.25,ndiv)
+    tempc1A = np.sqrt(tempc0A)
+    tempc1B = 2. - np.sqrt(tempc0B)
+    tempc = np.append(tempc1A.tolist(), tempc1B.tolist())
+    temp = Tc * tempc    
     iTc = np.where(temp>Tc)[0][0]
-    moment = np.zeros((len(magfield),ndiv))
+    magf = np.linspace(0.,magfield,ndivf)
+    moment = np.zeros((len(magf),3*ndiv))
     moment[:,0] = m0
-    for j, mf in enumerate(magfield):
+    for j, mf in enumerate(magf):
         for i in range(len(temp)-1):
             moment[j,i+1] = mmom(temp[i], mf, m0, lamb, moment[j,i])
 
-    print("*Calculate the specific heat Cm(T,B)")
-    tempc = temp/Tc
-    if ( struc == 'BCC' ):
-        p = 1.
-    elif( struc == 'FCC' ):
-        p = 2.
-    else:
-        p = 2.
-    Cm = np.array([Cmcalc(tempc[i],mf,moment[j,i],struc,p=p) for j, mf in enumerate(magfield) for i in range(len(tempc))]).reshape(len(magfield),ndiv)
-    print(Cm)
-    CmdT = np.array([Cm[j,i]/temp[i] for j in range(len(magfield)) for i in range(len(temp))]).reshape(len(magfield),ndiv)
-    dHm = np.array([integrate.simps(Cm[j,0:i],temp[0:i]) for j in range(len(magfield)) for i in range(1,len(temp)-1)]).reshape(len(magfield),ndiv-2)
-    dSm = np.array([integrate.simps(CmdT[j,0:i],temp[0:i]) for j in range(len(magfield)) for i in range(1,len(temp)-1)]).reshape(len(magfield),ndiv-2)
-
+    dGm = np.zeros(len(temp))
+    for i in range(len(temp)):
+        dGm[i] = -mu_B*eV2Jmol*integrate.simps(moment[:,i],magf[:])
+    
     if ('-p' in args):
         plt.xlabel("Temperature (K)")
         plt.ylabel("Magnetic moment ($\mu_B$)")
         plt.xlim(0.,1.5*Tc)
         plt.ylim(0.,1.1*m0)
-        for i in range(len(magfield)):
-            plt.plot(temp, moment[i,:], c=colors[i], label="B={0}T".format(magfield[i]))
+        plt.plot(temp, moment[len(magf)-1,:], c="black", label="B={0}T".format(magfield))
+        plt.legend()
         plt.savefig("Moment.pdf")
-        plt.legend()
-        plt.show()
-
-        plt.xlabel("Temperature (K)")
-        plt.ylabel("$C_m$ (J/mol$\cdot$K)")
-        for i in range(len(magfield)):
-            plt.plot(temp, Cm[i,:], c=colors[i], label="B={0}T".format(magfield[i]))
-        plt.savefig("Cm.pdf")
-        plt.legend()
-        plt.show()
-        
-        plt.xlabel("Temperature (K)")
-        plt.ylabel("$\Delta H_m$ (J/mol)")
-        for i in range(len(magfield)):
-            plt.plot(temp[0:ndiv-2], dHm[i,:], c=colors[i], label="B={0}T".format(magfield[i]))
-        plt.savefig("dHm.pdf")
-        plt.legend()
-        plt.show()
-        
-        plt.xlabel("Temperature (K)")
-        plt.ylabel("$\Delta S_m$ (J/mol$\cdot$K)")
-        for i in range(len(magfield)):
-            plt.plot(temp[0:ndiv-2], dSm[i,:], c=colors[i], label="B={0}T".format(magfield[i]))
-        plt.savefig("dSm.pdf")
-        plt.legend()
         plt.show()
 
         plt.xlabel("Temperature (K)")
         plt.ylabel("$\Delta G_m$ (J/mol)")
-        for i in range(len(magfield)):
-            plt.plot(temp[0:ndiv-2], dHm[i,:]-temp0*dSm[i,:], c=colors[i], label="B={0}T".format(magfield[i]))
-        plt.savefig("dGm.pdf")
+        plt.plot(temp, dGm, c="black", label="B={0}T".format(magfield))
         plt.legend()
+        plt.savefig("dGm.pdf")
         plt.show()
 
-
 def coth(x):
-    if (np.abs(x) < 1e-30):
+    if (np.abs(x) < 1e-10):
         return 0.
     else:
         return 1./np.tanh(x)
@@ -112,33 +80,12 @@ def Brillouin(j, alpha):
     """ define Brillouin function   Eq. (S4) """
     cf = 0.5*((2*j+1)/j)
     cfp = 0.5/j
-    Bf = cf*coth(cf*alpha) - cfp*coth(cfp*alpha)
-    return Bf
+    return cf*coth(cf*alpha) - cfp*coth(cfp*alpha)
 
-def mmom(temp, magfield, mmom0, lamb, mmonb):
+def mmom(temp, magfield, mmom0, lamb, mmomb):
     """ return magnetic moment at T, B    Eq. (S2) """
-    alpha = mmom0*mu_B * (magfield + lamb*mmonb*mu_B)/(kB*temp)  ### Eq. (S3)
+    alpha = mmom0*mu_B * (magfield + lamb*mmomb*mu_B)/(kB*temp)  ### Eq. (S3)
     return mmom0 * Brillouin(0.5*mmom0, alpha)
-
-def fs(struc):
-    if ( struc == 'BCC' ):
-        return 0.285
-    elif ( struc == 'FCC' ):
-        return 0.105 
-
-def kf(mm, struc):
-    cf = 4.*(1.-fs(struc))/(1.-np.exp(-4.))
-    return cf*kB*eV2Jmol*np.log(mm+1.)
-
-def kp(mm, struc, p=2.):
-    return 8.*p*fs(struc)*kB*eV2Jmol*np.log(mm+1.)
-
-def Cmcalc(tempc, magfield, mm, struc, p=2.):
-    """ calculate the specific heat """
-    if (tempc >= 1.):
-        return kp(mm,struc,p=p)*tempc*np.exp(8.*p*(1.-tempc))
-    else:
-        return kf(mm,struc)*tempc*np.exp(-4.*(1.-tempc))
 
 def Tc2lambda(J, Tc, n, g=2.):
     return 3.*kB*Tc/(J*(J+1.)*n*(g**2)*(mu_B**2))  # T/eV
