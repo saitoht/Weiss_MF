@@ -42,38 +42,45 @@ def main():
         struc: crystal structure, now BCC or FCC"""
     ndiv = 1000
     ndivf = 100
-    magfield = [0.5,10.0]
-    colors = ["red","blue"]
-    Tc = 1043.
-    nmag = 1
-    struc = 'carbide'
+    m0 = [2.2, 2.2, 1.7, 1.7]
+    magfield = [0.5,10.0,0.5,10.0]
+    colors = ["magenta","red","cyan","blue"]
+    Tc = [1043.,1043.0,800.,800.0]
+    nmag = [1,1,1,1]
     
-    usage = """ USAGE: python Weiss.py 2.2 [-p] [-h] """
+    usage = """ USAGE: python Weiss.py [-p] [-h] """
     args = sys.argv
-    if ( len(args) < 2 or '-h' in args ):
+    if ( '-h' in args ):
         print(usage)
         sys.exit()
-    m0 = float(args[1])
-    print("*moment @ T=0K: {0} (mu_B)".format(m0))
-    lamb = Tc2lambda(0.5*m0, Tc, nmag)
-    print("*lambda: {0} (T)".format(lamb*mu_B**2))
+    lengs = [len(m0),len(magfield),len(colors),len(Tc),len(nmag)]
+    if ( not lengs[1:] == lengs[:-1] ):
+        print("*ERROR: You should provide the same number of parameters in Weiss.py!")
+        sys.exit()
+    lamb = [Tc2lambda(0.5*m0[i], Tc[i], nmag[i]) for i in range(len(m0))]
+    for i in range(len(m0)):
+        print("*moment @ T=0K: {0} (mu_B)".format(m0[i]))
+        print("*lambda: {0} (T)".format(lamb[i]*mu_B**2))
+    m0max = np.max(m0)
+    Tcmax = np.max(Tc)
     tempc0A = np.linspace(1e-3,1.,2*ndiv,endpoint=False)
     tempc0B = np.linspace(1.,0.25,ndiv)
     tempc1A = np.sqrt(tempc0A)
     tempc1B = 2. - np.sqrt(tempc0B)
     tempc = np.append(tempc1A.tolist(), tempc1B.tolist())
-    temp = Tc * tempc    
-    iTc = np.where(temp>Tc)[0][0]
+    temp = Tcmax * tempc
+    iTc = [np.where(temp>Tci)[0][0] for Tci in Tc]
     magf = []
     for mag in magfield:
         magf.append(np.linspace(0.,mag,ndivf).tolist())
     magf = np.array(magf)
     moment = np.zeros((len(magf),len(magf[0]),3*ndiv))
-    moment[:,:,0] = m0
-    for k,magfi in enumerate(magf):
+    for i in range(len(magf)):
+        moment[i,:,0] = m0[i]
+    for k, magfi in enumerate(magf):
         for j, mf in enumerate(magfi):
             for i in range(len(temp)-1):
-                moment[k,j,i+1] = mmom(temp[i], mf, m0, lamb, moment[k,j,i])
+                moment[k,j,i+1] = mmom(temp[i], mf, m0[k], lamb[k], moment[k,j,i])
 
     dGm = np.zeros((len(magf),len(temp)))
     for j in range(len(magf)):
@@ -83,10 +90,10 @@ def main():
     if ('-p' in args):
         plt.xlabel("Temperature (K)")
         plt.ylabel("Magnetic moment ($\mu_B$)")
-        plt.xlim(0.,1.5*Tc)
-        plt.ylim(0.,1.1*m0)
+        plt.xlim(0.,1.5*Tcmax)
+        plt.ylim(0.,1.1*m0max)
         for i in range(len(magf)):
-            plt.plot(temp, moment[i,len(magf)-1,:], c=colors[i], label="B={0}T".format(magfield[i]))
+            plt.plot(temp, moment[i,len(magf[i])-1,:], c=colors[i], label="B={0}T".format(magfield[i]))
         plt.legend(fontsize=12)
         plt.minorticks_on()
         plt.savefig("Moment.pdf")
@@ -94,9 +101,11 @@ def main():
 
         plt.xlabel("Temperature (K)")
         plt.ylabel("$\Delta G_m$ (J/mol)")
+        plt.plot([0.,1.5*Tcmax],[0.,0.],c="black",linestyle="dashed",lw=0.5)
         for i in range(len(magf)):
             plt.plot(temp, dGm[i,:], c=colors[i], label="B={0}T".format(magfield[i]))
         plt.legend(fontsize=12)
+        plt.xlim(0.,1.5*Tcmax)
         plt.minorticks_on()
         plt.savefig("dGm.pdf")
         plt.show()
