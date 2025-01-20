@@ -9,6 +9,27 @@ T2J = 5.584937543138665 # J/mol T
 mu_B = 5.7883817982e-05 # eV/T
 eV2Jmol = 96.4853e3
 
+plt.rcParams['font.family'] = 'Helvetica'
+plt.rcParams["xtick.labelsize"]=14.0
+plt.rcParams["ytick.labelsize"]=14.0
+plt.rcParams["xtick.major.pad"] = 5
+plt.rcParams["ytick.major.pad"] = 5
+plt.rcParams["axes.labelsize"] = 14.0
+plt.rcParams["axes.linewidth"] = 1.0
+plt.rcParams["axes.labelpad"] = 6
+plt.rcParams["xtick.direction"] = "out" 
+plt.rcParams["ytick.direction"] = "out"
+plt.rcParams["xtick.major.width"] = 1.0
+plt.rcParams["ytick.major.width"] = 1.0
+plt.rcParams["xtick.minor.width"] = 0.5
+plt.rcParams["ytick.minor.width"] = 0.5
+plt.rcParams["xtick.major.size"] = 4.5
+plt.rcParams["ytick.major.size"] = 4.5
+plt.rcParams["xtick.minor.size"] = 3.0
+plt.rcParams["ytick.minor.size"] = 3.0
+plt.rcParams["legend.edgecolor"] = 'black'
+plt.rcParams["legend.fancybox"] = False
+
 def main():
     """ m0: magnetic moment at T=0k, B=0T from DFT (mu_B)
         temp: temperature (K)
@@ -21,7 +42,8 @@ def main():
         struc: crystal structure, now BCC or FCC"""
     ndiv = 1000
     ndivf = 100
-    magfield = 0.5
+    magfield = [0.5,10.0]
+    colors = ["red","blue"]
     Tc = 1043.
     nmag = 1
     struc = 'carbide'
@@ -42,31 +64,40 @@ def main():
     tempc = np.append(tempc1A.tolist(), tempc1B.tolist())
     temp = Tc * tempc    
     iTc = np.where(temp>Tc)[0][0]
-    magf = np.linspace(0.,magfield,ndivf)
-    moment = np.zeros((len(magf),3*ndiv))
-    moment[:,0] = m0
-    for j, mf in enumerate(magf):
-        for i in range(len(temp)-1):
-            moment[j,i+1] = mmom(temp[i], mf, m0, lamb, moment[j,i])
+    magf = []
+    for mag in magfield:
+        magf.append(np.linspace(0.,mag,ndivf).tolist())
+    magf = np.array(magf)
+    moment = np.zeros((len(magf),len(magf[0]),3*ndiv))
+    moment[:,:,0] = m0
+    for k,magfi in enumerate(magf):
+        for j, mf in enumerate(magfi):
+            for i in range(len(temp)-1):
+                moment[k,j,i+1] = mmom(temp[i], mf, m0, lamb, moment[k,j,i])
 
-    dGm = np.zeros(len(temp))
-    for i in range(len(temp)):
-        dGm[i] = -mu_B*eV2Jmol*integrate.simps(moment[:,i],magf[:])
+    dGm = np.zeros((len(magf),len(temp)))
+    for j in range(len(magf)):
+        for i in range(len(temp)):
+            dGm[j,i] = -mu_B*eV2Jmol*integrate.simps(moment[j,:,i],magf[j,:])
     
     if ('-p' in args):
         plt.xlabel("Temperature (K)")
         plt.ylabel("Magnetic moment ($\mu_B$)")
         plt.xlim(0.,1.5*Tc)
         plt.ylim(0.,1.1*m0)
-        plt.plot(temp, moment[len(magf)-1,:], c="black", label="B={0}T".format(magfield))
-        plt.legend()
+        for i in range(len(magf)):
+            plt.plot(temp, moment[i,len(magf)-1,:], c=colors[i], label="B={0}T".format(magfield[i]))
+        plt.legend(fontsize=12)
+        plt.minorticks_on()
         plt.savefig("Moment.pdf")
         plt.show()
 
         plt.xlabel("Temperature (K)")
         plt.ylabel("$\Delta G_m$ (J/mol)")
-        plt.plot(temp, dGm, c="black", label="B={0}T".format(magfield))
-        plt.legend()
+        for i in range(len(magf)):
+            plt.plot(temp, dGm[i,:], c=colors[i], label="B={0}T".format(magfield[i]))
+        plt.legend(fontsize=12)
+        plt.minorticks_on()
         plt.savefig("dGm.pdf")
         plt.show()
 
