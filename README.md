@@ -20,21 +20,32 @@ Here, "-p" activates the plot option.
 ## Theory
 The magnetization curve is calculated by the Weiss mean-field theory.
 Therefore, the curve is simulated by Brillouin function. 
+
 $$
 \begin{align}
-m(B,T) &= m_0 B\left(J, \cfrac{m_0 (B+\lambda m(B,T))}{k_BT})\right \\
-B(J,x) &= \cfrac{2J+1}{2J} \coth{\left( \cfrac{2J+1}{2J}x \right)} - \cfrac{1}{2J} \coth{\left( \cfrac{1}{2J}x \right)}
+m(B,T) &= m_0 Br\left(J, \cfrac{m_0 (B+\lambda m(B,T))}{k_BT}\right)
 \end{align}
 $$
-Here, $${\lambda}$$ stands for the molecular field constant given by the following equation.
+
 $$
+\begin{align}
+Br(J,x) &= \cfrac{2J+1}{2J} \coth{\left( \cfrac{2J+1}{2J}x \right)} - \cfrac{1}{2J} \coth{\left( \cfrac{1}{2J}x \right)}
+\end{align}
+$$
+
+Here, $${\lambda}$$ stands for the molecular field constant given by the following equation.
+
+$$
+\begin{align}
 \lambda = \cfrac{3Jk_BT_C}{J(J+1)g^2\mu_B^2}
+\end{align}
 $$
 
 The magnetic Gibbs free energy will be given by the integration of the magnetization curve with respect to magnetic field as follows.
+
 $$
 \begin{align}
-\Delta G_m(H,T) = -\int_0^H dH' m(H',T)
+\Delta G_m(B,T) = -\int_0^B dB' m(B',T)
 \end{align}
 $$
 
