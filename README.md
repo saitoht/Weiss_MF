@@ -10,25 +10,37 @@ Following the description in ["Z. Q. You, J. H. Zhen, T. P. Hou, D. Zhang, W. Zh
 Before calculation, you should see the contents of Weiss.py.  
 In main() function, you will define input parameters ndiv, magfield, colors, Tc, nmag, struc for the system under consideration.
 
+You should modify the parameters (m0, magfield, colors, Tc, nmag) in Weiss.py before calculations.
 You can calculate the property by the following command.
 ```bash
-python Weiss.py 2.2 -p
+python Weiss.py -p
 ```
-Here, 2.2 means the magnetic moment of Fe by DFT.
--p activates the plot option.
+Here, "-p" activates the plot option.
+
+## Theory
+The magnetization curve is calculated by the Weiss mean-field theory.
+Therefore, the curve is simulated by Brillouin function. 
+$$
+\begin{align}
+m(B,T) &= m_0 B\left(J, \cfrac{m_0 (B+\lambda m(B,T))}{k_BT})\right \\
+B(J,x) &= \cfrac{2J+1}{2J} \coth{\left( \cfrac{2J+1}{2J}x \right)} - \cfrac{1}{2J} \coth{\left( \cfrac{1}{2J}x \right)}
+\end{align}
+$$
+Here, $${\lambda}$$ stands for the molecular field constant given by the following equation.
+$$
+\lambda = \cfrac{3Jk_BT_C}{J(J+1)g^2\mu_B^2}
+$$
+
+The magnetic Gibbs free energy will be given by the integration of the magnetization curve with respect to magnetic field as follows.
+$$
+\begin{align}
+\Delta G_m(H,T) = -\int_0^H dH' m(H',T)
+\end{align}
+$$
 
 ### Result figures
 - Moment.pdf ... Magnetic moment vs temperature
 ![](figs/Moment.png)
-
-- Cm.pdf ... Specific heat vs temperature
-![](figs/Cm.png)
-
-- dHm.pdf ... Entalphy vs temperature
-![](figs/dHm.png)
-
-- dSm.pdf ... Entropy vs temperature
-![](figs/dSm.png)
 
 - dGm.pdf ... Magnetic Gibbs free energy vs tempearture
 ![](figs/dGm.png)
