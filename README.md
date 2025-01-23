@@ -37,7 +37,7 @@ Here, $${\lambda}$$ stands for the molecular field constant given by the followi
 
 $$
 \begin{align}
-\lambda = \cfrac{3Jk_BT_C}{J(J+1)g^2\mu_B^2}
+\lambda = \cfrac{3k_BT_C}{J(J+1)g^2\mu_B^2}
 \end{align}
 $$
 
